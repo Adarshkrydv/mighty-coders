@@ -1,0 +1,125 @@
+CREATE TABLE Users (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255),
+    email VARCHAR(255) UNIQUE,
+    role ENUM('Admin', 'Organizer', 'Attendee')
+);
+
+CREATE TABLE Events (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(255),
+    status ENUM('Pending', 'Active', 'Completed'),
+    organizer_id INT,
+    FOREIGN KEY (organizer_id) REFERENCES Users(id)
+);
+
+CREATE TABLE Tickets (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    event_id INT,
+    price DECIMAL(10, 2),
+    quantity INT,
+    FOREIGN KEY (event_id) REFERENCES Events(id)
+);
+
+CREATE TABLE Messages (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    content TEXT,
+    event_id INT,
+    FOREIGN KEY (event_id) REFERENCES Events(id)
+);
+import java.io.IOException;
+import java.sql.*;
+import javax.servlet.*;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.*;
+
+@WebServlet("/UserServlet")
+public class UserServlet extends HttpServlet {
+    private static final String DB_URL = "jdbc:mysql://localhost:3306/event_management";
+    private static final String USER = "root";
+    private static final String PASS = "password";
+
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        response.setContentType("text/html");
+        try (Connection conn = DriverManager.getConnection(DB_URL, USER, PASS)) {
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery("SELECT * FROM Users");
+
+            // Display Users (simplified)
+            while (rs.next()) {
+                response.getWriter().println("<p>" + rs.getString("name") + " - " + rs.getString("role") + "</p>");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String action = request.getParameter("action");
+        String name = request.getParameter("name");
+        String email = request.getParameter("email");
+        String role = request.getParameter("role");
+
+        try (Connection conn = DriverManager.getConnection(DB_URL, USER, PASS)) {
+            if ("add".equals(action)) {
+                String sql = "INSERT INTO Users (name, email, role) VALUES (?, ?, ?)";
+                try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                    pstmt.setString(1, name);
+                    pstmt.setString(2, email);
+                    pstmt.setString(3, role);
+                    pstmt.executeUpdate();
+                }
+            }
+            response.sendRedirect("UserServlet");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
+import java.io.IOException;
+import java.sql.*;
+import javax.servlet.*;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.*;
+
+@WebServlet("/EventServlet")
+public class EventServlet extends HttpServlet {
+    private static final String DB_URL = "jdbc:mysql://localhost:3306/event_management";
+    private static final String USER = "root";
+    private static final String PASS = "password";
+
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        response.setContentType("text/html");
+        try (Connection conn = DriverManager.getConnection(DB_URL, USER, PASS)) {
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery("SELECT * FROM Events");
+
+            // Display Events (simplified)
+            while (rs.next()) {
+                response.getWriter().println("<p>" + rs.getString("title") + " - " + rs.getString("status") + "</p>");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String action = request.getParameter("action");
+        String title = request.getParameter("title");
+        String status = request.getParameter("status");
+
+        try (Connection conn = DriverManager.getConnection(DB_URL, USER, PASS)) {
+            if ("add".equals(action)) {
+                String sql = "INSERT INTO Events (title, status) VALUES (?, ?)";
+                try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                    pstmt.setString(1, title);
+                    pstmt.setString(2, status);
+                    pstmt.executeUpdate();
+                }
+            }
+            response.sendRedirect("EventServlet");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
